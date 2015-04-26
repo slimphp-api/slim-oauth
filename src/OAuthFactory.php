@@ -93,6 +93,6 @@ class OAuthFactory {
 
         $service = $this->getOrCreateByType($serviceName);
 
-        return $service && $this->getStorage()->hasAccessToken($service->service());
+        return $service && $this->storage->hasAccessToken($service->service());
     }
 }
