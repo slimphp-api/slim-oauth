@@ -1,0 +1,24 @@
+{
+    "name": "slim/oauth",
+    "type": "library",
+    "description": "Slim Framework CSRF protection middleware",
+    "keywords": ["slim","framework","middleware","oauth"],
+    "homepage": "http://slimframework.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Gabriel Baker",
+            "email": "me@g403.co",
+            "homepage": "http://g403.co"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "psr/http-message": "~0.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "Slim\\OAuth\\": "src"
+        }
+    }
+}
