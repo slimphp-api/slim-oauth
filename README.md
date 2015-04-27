@@ -17,12 +17,12 @@ Requires Slim 3.0.0 or newer.
 ## Usage
 
 ```php
-
+<?php
 use Slim\App;
 use Slim\OAuth\OAuthFactory;
 use Slim\OAuth\OAuthMiddleware;
 
-$oauthCreds = [
+$oAuthCreds = [
     'github' => [
         'key'       => 'abc',
         'secret'    => '123',
@@ -31,7 +31,7 @@ $oauthCreds = [
 
 $app = new App();
 
-$oAuthFactory = new OAuthFactory($oauthCreds);
+$oAuthFactory = new OAuthFactory($oAuthCreds);
 
 $app->add(new OAuthMiddleware($oAuthFactory));
 
