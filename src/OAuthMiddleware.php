@@ -23,13 +23,13 @@ class OAuthMiddleware
      * @param  OAuthFactory  $oAuthFactory  The OAuthFacotry instance to use
      * @param  Array         $ignoredRoutes An array of ignorable routes
      */
-    public function __construct(OAuthFactory $oAuthFactory = null, array $ignoredRoutes = [])
+    public function __construct(OAuthFactory $oAuthFactory, array $ignoredRoutes = [])
     {
+        $this->oAuthFactory  = $oAuthFactory;
+
         if ($ignoredRoutes) {
             $this->ignoredRoutes = $ignoredRoutes;
         }
-
-        $this->oAuthFactory  = is_null($oAuthFactory) ? (new OAuthFactory) : $oAuthFactory;
     }
 
     /**
