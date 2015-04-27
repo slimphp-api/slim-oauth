@@ -30,9 +30,10 @@ $oauthCreds = [
 ];
 
 $app = new App();
-$app['OAuthFactory'] = new OAuthFactory($oauthCreds);
 
-$app->add(new OAuthMiddleware($app['OAuthFactory']));
+$oAuthFactory = new OAuthFactory($oauthCreds);
+
+$app->add(new OAuthMiddleware($oAuthFactory));
 
 $app->map(['GET'], '/auth', function ($request, $response, $args) {
     $response->write('<a href="/auth/github">Login via GitHub</a>');
