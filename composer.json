@@ -1,5 +1,5 @@
 {
-    "name": "slim/oauth",
+    "name": "gabriel403/slim-oauth",
     "type": "library",
     "description": "Slim Framework CSRF protection middleware",
     "keywords": ["slim","framework","middleware","oauth"],
