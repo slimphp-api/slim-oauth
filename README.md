@@ -9,7 +9,7 @@ Enables you to authenticate using various OAuth providers.
 Via Composer
 
 ``` bash
-$ composer require slim/oauth
+$ composer require gabriel403/slim-oauth
 ```
 
 Requires Slim 3.0.0 or newer.
