@@ -9,7 +9,6 @@ use Psr\Http\Message\ResponseInterface;
  */
 class OAuthMiddleware
 {
-    private $sessionName    = 'slim_oauth_middle';
     private $unauthedRoute  = '/auth';
     private $ignoredRoutes  = ['/', '/auth'];
     private $oAuthProviders = ['github'];
@@ -76,10 +75,10 @@ class OAuthMiddleware
 
             $service        = $this->oAuthFactory->getOrCreateByType($matches['oauthServiceType']);
             $accessTokenEnt = $service->requestAccessToken($request->getParam('code'));
-            $url            = $this->getValue('originalDestination')?:'/';
+            $url            = $this->oAuthFactory->getValue('originalDestination')?:'/';
 
-            $this->delValue('originalDestination');
-            $this->storeValue('oauth_service_type', $matches['oauthServiceType']);
+            $this->oAuthFactory->delValue('originalDestination');
+            $this->oAuthFactory->storeValue('oauth_service_type', $matches['oauthServiceType']);
 
             if ($url) {
                 return $response->withStatus(200)->withHeader('Location', $url);
@@ -87,8 +86,8 @@ class OAuthMiddleware
         }
 
         // we need to know somehow what the actual service type is, ie github/facebook before here.
-        if (!$this->oAuthFactory->isAuthenticated($this->getValue('oauth_service_type'))) {
-            $this->storeValue('originalDestination', $path);
+        if (!$this->oAuthFactory->isAuthenticated()) {
+            $this->oAuthFactory->storeValue('originalDestination', $path);
             return $response->withStatus(403)->withHeader('Location', $this->unauthedRoute);
         }
 
@@ -185,60 +184,5 @@ class OAuthMiddleware
     public function getoAuthProviders()
     {
         return $this->oAuthProviders;
-    }
-
-    /**
-     * store a value in the session
-     *
-     * @param  string $name  name of value to store
-     * @param  mixed  $value value to store
-     */
-    public function storeValue($name, $value)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            $_SESSION[$this->sessionName] = [];
-        }
-
-        $_SESSION[$this->sessionName][$name] = $value;
-    }
-
-    /**
-     * retrieve value from session
-     *
-     * @param  string $name the name of value to get from session
-     *
-     * @return mixed        the value from the session
-     */
-    public function getValue($name)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            return false;
-        }
-
-        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
-            return false;
-        }
-
-        return $_SESSION[$this->sessionName][$name];
-    }
-
-    /**
-     * delete a value from session
-     *
-     * @param  string $name the name to delete
-     *
-     * @return void
-     */
-    public function delValue($name)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            return;
-        }
-
-        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
-            return;
-        }
-
-        unset($_SESSION[$this->sessionName][$name]);
     }
 }

@@ -10,6 +10,7 @@ use OAuth\ServiceFactory;
  * Factory for creating OAuth services
  */
 class OAuthFactory {
+    private $sessionName       = 'slim_oauth_middle';
     private $registeredService = false;
     private $serviceFactory;
     private $storage;
@@ -35,6 +36,10 @@ class OAuthFactory {
     public function createService($type)
     {
         $typeLower = strtolower($type);
+
+        if (!array_key_exists($typeLower, $this->oAuthCredentials)) {
+            return false;
+        }
 
         // Create a new instance of the URI class with the current URI, stripping the query string
         $uriFactory = new UriFactory();
@@ -81,18 +86,67 @@ class OAuthFactory {
     /**
      * Check if user is authenticated
      *
-     * @param  string  $serviceName the oauth service type
-     *
      * @return boolean              whether the user is authenticated or not
      */
-    public function isAuthenticated($serviceName)
+    public function isAuthenticated()
     {
-        if (false === $serviceName) {
+        $service = $this->getOrCreateByType($this->getValue('oauth_service_type'));
+
+        return $service && $this->storage->hasAccessToken($service->service());
+    }
+
+    /**
+     * store a value in the session
+     *
+     * @param  string $name  name of value to store
+     * @param  mixed  $value value to store
+     */
+    public function storeValue($name, $value)
+    {
+        if (!array_key_exists($this->sessionName, $_SESSION)) {
+            $_SESSION[$this->sessionName] = [];
+        }
+
+        $_SESSION[$this->sessionName][$name] = $value;
+    }
+
+    /**
+     * retrieve value from session
+     *
+     * @param  string $name the name of value to get from session
+     *
+     * @return mixed        the value from the session
+     */
+    public function getValue($name)
+    {
+        if (!array_key_exists($this->sessionName, $_SESSION)) {
             return false;
         }
 
-        $service = $this->getOrCreateByType($serviceName);
+        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
+            return false;
+        }
 
-        return $service && $this->storage->hasAccessToken($service->service());
+        return $_SESSION[$this->sessionName][$name];
+    }
+
+    /**
+     * delete a value from session
+     *
+     * @param  string $name the name to delete
+     *
+     * @return void
+     */
+    public function delValue($name)
+    {
+        if (!array_key_exists($this->sessionName, $_SESSION)) {
+            return;
+        }
+
+        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
+            return;
+        }
+
+        unset($_SESSION[$this->sessionName][$name]);
     }
 }
