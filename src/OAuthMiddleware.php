@@ -194,7 +194,7 @@ class OAuthMiddleware
      */
     public function getReturnRoute()
     {
-        return $this->returnRoute
+        return $this->returnRoute;
     }
 
     /**
@@ -215,7 +215,7 @@ class OAuthMiddleware
      */
     public function getUnauthedRoute()
     {
-        return $this->unauthedRoute
+        return $this->unauthedRoute;
     }
 
     /**
