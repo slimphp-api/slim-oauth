@@ -9,7 +9,8 @@ use Psr\Http\Message\ResponseInterface;
  */
 class OAuthMiddleware
 {
-    private $unauthedRoute  = '/auth';
+    private $unauthedRoute  = '/';
+    private $returnRoute    = false;
     private $ignoredRoutes  = ['/', '/auth'];
     private $oAuthProviders = ['github'];
     private $oAuthFactory;
@@ -87,7 +88,7 @@ class OAuthMiddleware
 
         // we need to know somehow what the actual service type is, ie github/facebook before here.
         if (!$this->oAuthFactory->isAuthenticated()) {
-            $this->oAuthFactory->storeValue('originalDestination', $path);
+            $this->oAuthFactory->storeValue('originalDestination', ($this->returnRoute?:$path));
             return $response->withStatus(403)->withHeader('Location', $this->unauthedRoute);
         }
 
@@ -181,8 +182,49 @@ class OAuthMiddleware
      *
      * @return array Current OAuth Providers
      */
-    public function getoAuthProviders()
+    public function getOAuthProviders()
     {
         return $this->oAuthProviders;
+    }
+
+    /**
+     * gets the current returning route
+     *
+     * @return string Current return route
+     */
+    public function getReturnRoute()
+    {
+        return $this->returnRoute
+    }
+
+    /**
+     * Sets an override return route, allowing developer to specify
+     * a route to return to after authentication
+     *
+     * @param string $returnRoute override return route
+     */
+    public function setReturnRoute($returnRoute)
+    {
+        $this->returnRoute = $returnRoute;
+    }
+
+    /**
+     * gets the current unauthorised route
+     *
+     * @return string Current unauthorised route
+     */
+    public function getUnauthedRoute()
+    {
+        return $this->unauthedRoute
+    }
+
+    /**
+     * Sets a route to redirect to if unauthorised
+     *
+     * @param string $unauthedRoute unauthorised route
+     */
+    public function setUnauthedRoute($unauthedRoute)
+    {
+        $this->unauthedRoute = $unauthedRoute;
     }
 }
