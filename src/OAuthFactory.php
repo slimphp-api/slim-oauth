@@ -1,5 +1,5 @@
 <?php
-namespace Slim\OAuth;
+namespace SlimApi\OAuth;
 
 use OAuth\Common\Storage\Session;
 use OAuth\Common\Consumer\Credentials;

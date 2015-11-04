@@ -1,5 +1,5 @@
 <?php
-namespace Slim\OAuth;
+namespace SlimApi\OAuth;
 
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
