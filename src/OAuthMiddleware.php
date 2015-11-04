@@ -1,6 +1,7 @@
 <?php
 namespace SlimApi\OAuth;
 
+use Exception;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -9,27 +10,20 @@ use Psr\Http\Message\ResponseInterface;
  */
 class OAuthMiddleware
 {
-    private $unauthedRoute  = '/';
+    private $defaultRole  = 'guest';
     private $returnRoute    = false;
-    private $ignoredRoutes  = ['/', '/auth'];
     private $oAuthProviders = ['github'];
     private $oAuthFactory;
 
-    private static $authRoute     = '/auth/(?<oauthServiceType>\w+)';
-    private static $callbackRoute = '/auth/(?<oauthServiceType>\w+)/callback';
-    private static $regexFixes    = '@';
+    private static $authRoute     = '/auth/(?<oAuthServiceType>\w+)';
+    private static $callbackRoute = '/auth/(?<oAuthServiceType>\w+)/callback';
 
     /**
      * @param  OAuthFactory  $oAuthFactory  The OAuthFacotry instance to use
-     * @param  Array         $ignoredRoutes An array of ignorable routes
      */
-    public function __construct(OAuthFactory $oAuthFactory, array $ignoredRoutes = [])
+    public function __construct(OAuthFactory $oAuthFactory)
     {
         $this->oAuthFactory  = $oAuthFactory;
-
-        if ($ignoredRoutes) {
-            $this->ignoredRoutes = $ignoredRoutes;
-        }
     }
 
     /**
@@ -49,47 +43,45 @@ class OAuthMiddleware
             return $next($request, $response);
         }
 
-        foreach ($this->ignoredRoutes as $ignoredRoute) {
-            $pathIsIgnorable = (1 === preg_match($this->regexRoute($ignoredRoute), $path));
-
-            if ($pathIsIgnorable) {
-                return $next($request, $response);
-            }
-        }
-
         // this matches the request to authenticate for an oauth provider
         if (1 === preg_match($this->getAuthRouteRegex(), $path, $matches)) {
-            if (!in_array($matches['oauthServiceType'], $this->oAuthProviders)) {
-                return $response->withStatus(403)->withHeader('Location', $this->unauthedRoute);
+            // validate we have an allowed oAuthServiceType
+            if (!in_array($matches['oAuthServiceType'], $this->oAuthProviders)) {
+                throw new Exception("Unknown oAuthServiceType");
             }
 
-            $url = $this->oAuthFactory->getOrCreateByType($matches['oauthServiceType'])->getAuthorizationUri();
+            // validate the return url
+            parse_str($_SERVER['QUERY_STRING'], $query);
+            if (!filter_var($query['return'], FILTER_VALIDATE_URL) === false) {
+                throw new Exception("Invalid return url");
+            }
+
+            $_SESSION['oauth_return_url'] = $query['return'];
+
+            $url = $this->oAuthFactory->getOrCreateByType($matches['oAuthServiceType'])->getAuthorizationUri();
 
             return $response->withStatus(302)->withHeader('Location', $url);
-        }
-
-        // this matches the request to post-authentication for an oauth provider
-        if (1 === preg_match($this->getCallbackRouteRegex(), $path, $matches)) {
-            if (!in_array($matches['oauthServiceType'], $this->oAuthProviders)) {
-                return $response->withStatus(403)->withHeader('Location', $this->unauthedRoute);
+        } elseif (1 === preg_match($this->getCallbackRouteRegex(), $path, $matches)) { // this matches the request to post-authentication for an oauth provider
+            if (!in_array($matches['oAuthServiceType'], $this->oAuthProviders)) {
+                throw new Exception("Unknown oAuthServiceType");
             }
 
-            $service        = $this->oAuthFactory->getOrCreateByType($matches['oauthServiceType']);
-            $accessTokenEnt = $service->requestAccessToken($request->getParam('code'));
-            $url            = $this->oAuthFactory->getValue('originalDestination')?:'/';
+            $service = $this->oAuthFactory->getOrCreateByType($matches['oAuthServiceType']);
+            // turn our code into a token that's stored internally
+            $service->requestAccessToken($request->getParam('code'));
 
-            $this->oAuthFactory->delValue('originalDestination');
-            $this->oAuthFactory->storeValue('oauth_service_type', $matches['oauthServiceType']);
-
-            if ($url) {
-                return $response->withStatus(200)->withHeader('Location', $url);
-            }
+            // generate a temporary session token
+            $prngToken = $this->oAuthFactory->tempToken();
+            // set our token in the header and then redirect to the client's chosen url
+            return $response->withStatus(200)->withHeader('Authorization', $prngToken)->withHeader('Location', $_SESSION['oauth_return_url']);
         }
 
-        // we need to know somehow what the actual service type is, ie github/facebook before here.
-        if (!$this->oAuthFactory->isAuthenticated()) {
-            $this->oAuthFactory->storeValue('originalDestination', ($this->returnRoute?:$path));
-            return $response->withStatus(403)->withHeader('Location', $this->unauthedRoute);
+        if ($this->oAuthFactory->isAuthenticated()) {
+            // generate a temporary session token
+            $prngToken = $this->oAuthFactory->tempToken();
+            $response  = $response->withHeader('Authorization', $prngToken);
+        } else {
+
         }
 
         return $next($request, $response);
@@ -104,7 +96,7 @@ class OAuthMiddleware
      */
     public function regexRoute($route)
     {
-        return static::$regexFixes . '^' . $route . '$' . static::$regexFixes;
+        return '@^' . $route . '$@';
     }
 
     /**
@@ -148,26 +140,6 @@ class OAuthMiddleware
     }
 
     /**
-     * set the routes that should be ignored for authentication checks
-     *
-     * @param array $ignoredRoutes ignorable routes
-     */
-    public function setIgnoredRoutes(array $ignoredRoutes)
-    {
-        $this->ignoredRoutes = $ignoredRoutes;
-    }
-
-    /**
-     * get the routes that are currently being ignored for authentication calls
-     *
-     * @return array the ignored routes
-     */
-    public function getIgnoredRoutes()
-    {
-        return $this->ignoredRoutes;
-    }
-
-    /**
      * sets the array of allowed OAuth Providers
      *
      * @param array $oAuthProviders OAuth Providers
@@ -185,46 +157,5 @@ class OAuthMiddleware
     public function getOAuthProviders()
     {
         return $this->oAuthProviders;
-    }
-
-    /**
-     * gets the current returning route
-     *
-     * @return string Current return route
-     */
-    public function getReturnRoute()
-    {
-        return $this->returnRoute;
-    }
-
-    /**
-     * Sets an override return route, allowing developer to specify
-     * a route to return to after authentication
-     *
-     * @param string $returnRoute override return route
-     */
-    public function setReturnRoute($returnRoute)
-    {
-        $this->returnRoute = $returnRoute;
-    }
-
-    /**
-     * gets the current unauthorised route
-     *
-     * @return string Current unauthorised route
-     */
-    public function getUnauthedRoute()
-    {
-        return $this->unauthedRoute;
-    }
-
-    /**
-     * Sets a route to redirect to if unauthorised
-     *
-     * @param string $unauthedRoute unauthorised route
-     */
-    public function setUnauthedRoute($unauthedRoute)
-    {
-        $this->unauthedRoute = $unauthedRoute;
     }
 }
