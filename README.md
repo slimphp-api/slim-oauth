@@ -31,7 +31,7 @@ $oAuthCreds = [
 
 $app = new App();
 
-$app['OAuthFactory'] = new OAuthFactory($oauthCreds);
+$app['OAuthFactory'] = new OAuthFactory($oAuthCreds);
 
 $app->add(new OAuthMiddleware($app['OAuthFactory']));
 
