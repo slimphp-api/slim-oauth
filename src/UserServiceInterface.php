@@ -4,7 +4,6 @@ namespace SlimApi\OAuth;
 use OAuth\Common\Service\ServiceInterface;
 
 interface UserServiceInterface {
-
     /**
      * this uses the service interface, as it's down to the implementation
      * and the different service types to figure out what info to get from the api
