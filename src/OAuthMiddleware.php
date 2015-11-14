@@ -19,11 +19,13 @@ class OAuthMiddleware
     private static $callbackRoute = '/auth/(?<oAuthServiceType>\w+)/callback';
 
     /**
-     * @param  OAuthFactory  $oAuthFactory  The OAuthFacotry instance to use
+     * @param  OAuthFactory          $oAuthFactory  The OAuthFacotry instance to use
+     * @param  UserServiceInterface  $userService
      */
-    public function __construct(OAuthFactory $oAuthFactory)
+    public function __construct(OAuthFactory $oAuthFactory, UserServiceInterface $userService)
     {
-        $this->oAuthFactory  = $oAuthFactory;
+        $this->oAuthFactory = $oAuthFactory;
+        $this->userService  = $userService;
     }
 
     /**
@@ -52,7 +54,7 @@ class OAuthMiddleware
 
             // validate the return url
             parse_str($_SERVER['QUERY_STRING'], $query);
-            if (!filter_var($query['return'], FILTER_VALIDATE_URL) === false) {
+            if (!array_key_exists('return', $query) || filter_var($query['return'], FILTER_VALIDATE_URL) === false) {
                 throw new Exception("Invalid return url");
             }
 
@@ -69,20 +71,28 @@ class OAuthMiddleware
             $service = $this->oAuthFactory->getOrCreateByType($matches['oAuthServiceType']);
             // turn our code into a token that's stored internally
             $service->requestAccessToken($request->getParam('code'));
-
-            // generate a temporary session token
-            $prngToken = $this->oAuthFactory->tempToken();
+            // validates and creates the user entry in the db if not already exists
+            $user = $this->userService->createUser($service);
             // set our token in the header and then redirect to the client's chosen url
-            return $response->withStatus(200)->withHeader('Authorization', $prngToken)->withHeader('Location', $_SESSION['oauth_return_url']);
+            return $response->withStatus(200)->withHeader('Authorization', 'token '.$user->token)->withHeader('Location', $_SESSION['oauth_return_url']);
         }
 
-        if ($this->oAuthFactory->isAuthenticated()) {
-            // generate a temporary session token
-            $prngToken = $this->oAuthFactory->tempToken();
-            $response  = $response->withHeader('Authorization', $prngToken);
-        } else {
-
+        // Fetches the current user or returns a default
+        $authHeaders = $request->getHeader('Authorization');
+        $authValue  = false;
+        if (count($authHeaders) > 0) {
+            foreach ($authHeaders as $authHeader) {
+                $authValues = explode(' ', $authHeader);
+                if (2 === count($authValues) && array_search(strtolower($authValues[0]), ['bearer', 'token'])) {
+                    $authValue = $authValues[1];
+                    break;
+                }
+            }
         }
+
+        $user     = $this->userService->findOrNew($authValue);
+        $request  = $request->withAttribute('user', $user);
+        $response = $response->withHeader('Authorization', 'token '.$user->token);
 
         return $next($request, $response);
     }
