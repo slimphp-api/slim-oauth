@@ -9,7 +9,6 @@ use OAuth\ServiceFactory;
  * Factory for creating OAuth services
  */
 class OAuthFactory {
-    private $sessionName       = 'slim_oauth_middle';
     private $storageClass      = '\OAuth\Common\Storage\Session';
     private $registeredService = false;
     private $serviceFactory;
@@ -83,17 +82,5 @@ class OAuthFactory {
     public function getService()
     {
         return $this->registeredService;
-    }
-
-    /**
-     * Check if user is authenticated
-     *
-     * @return boolean              whether the user is authenticated or not
-     */
-    public function isAuthenticated()
-    {
-        $service = $this->getOrCreateByType($_SESSION['oauth_service_type']);
-
-        return $service && $this->storage->hasAccessToken($service->service());
     }
 }
