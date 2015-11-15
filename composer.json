@@ -1,5 +1,5 @@
 {
-    "name": "gabriel403/slim-oauth",
+    "name": "slimphp-api/slim-oauth",
     "type": "library",
     "description": "Slim Framework CSRF protection middleware",
     "keywords": ["slim","framework","middleware","oauth"],
@@ -19,7 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Slim\\OAuth\\": "src"
+            "SlimApi\\OAuth\\": "src"
         }
     }
 }

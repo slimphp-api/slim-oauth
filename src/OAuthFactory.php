@@ -1,7 +1,6 @@
 <?php
-namespace Slim\OAuth;
+namespace SlimApi\OAuth;
 
-use OAuth\Common\Storage\Session;
 use OAuth\Common\Consumer\Credentials;
 use OAuth\Common\Http\Uri\UriFactory;
 use OAuth\ServiceFactory;
@@ -10,7 +9,7 @@ use OAuth\ServiceFactory;
  * Factory for creating OAuth services
  */
 class OAuthFactory {
-    private $sessionName       = 'slim_oauth_middle';
+    private $storageClass      = '\OAuth\Common\Storage\Session';
     private $registeredService = false;
     private $serviceFactory;
     private $storage;
@@ -24,7 +23,7 @@ class OAuthFactory {
     public function __construct($oAuthCredentials)
     {
         $this->serviceFactory   = new ServiceFactory;
-        $this->storage          = new Session;
+        $this->storage          = new $this->storageClass();
         $this->oAuthCredentials = $oAuthCredentials;
     }
 
@@ -33,7 +32,7 @@ class OAuthFactory {
      *
      * @param  string $type the type of oauth services to create
      */
-    public function createService($type)
+    public function createService($type, $scopes = ['user'])
     {
         $typeLower = strtolower($type);
 
@@ -54,7 +53,7 @@ class OAuthFactory {
         );
 
         // Instantiate the OAuth service using the credentials, http client and storage mechanism for the token
-        $this->registeredService = $this->serviceFactory->createService($type, $credentials, $this->storage, ['user']);
+        $this->registeredService = $this->serviceFactory->createService($type, $credentials, $this->storage, $scopes);
     }
 
     /**
@@ -81,72 +80,5 @@ class OAuthFactory {
     public function getService()
     {
         return $this->registeredService;
-    }
-
-    /**
-     * Check if user is authenticated
-     *
-     * @return boolean              whether the user is authenticated or not
-     */
-    public function isAuthenticated()
-    {
-        $service = $this->getOrCreateByType($this->getValue('oauth_service_type'));
-
-        return $service && $this->storage->hasAccessToken($service->service());
-    }
-
-    /**
-     * store a value in the session
-     *
-     * @param  string $name  name of value to store
-     * @param  mixed  $value value to store
-     */
-    public function storeValue($name, $value)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            $_SESSION[$this->sessionName] = [];
-        }
-
-        $_SESSION[$this->sessionName][$name] = $value;
-    }
-
-    /**
-     * retrieve value from session
-     *
-     * @param  string $name the name of value to get from session
-     *
-     * @return mixed        the value from the session
-     */
-    public function getValue($name)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            return false;
-        }
-
-        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
-            return false;
-        }
-
-        return $_SESSION[$this->sessionName][$name];
-    }
-
-    /**
-     * delete a value from session
-     *
-     * @param  string $name the name to delete
-     *
-     * @return void
-     */
-    public function delValue($name)
-    {
-        if (!array_key_exists($this->sessionName, $_SESSION)) {
-            return;
-        }
-
-        if (!array_key_exists($name, $_SESSION[$this->sessionName])) {
-            return;
-        }
-
-        unset($_SESSION[$this->sessionName][$name]);
     }
 }
