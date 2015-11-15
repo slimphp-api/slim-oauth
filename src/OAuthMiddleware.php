@@ -10,7 +10,7 @@ use Psr\Http\Message\ResponseInterface;
  */
 class OAuthMiddleware
 {
-    private $oAuthProviders = ['github'];
+    private $oAuthProviders;
     private $oAuthFactory;
     private $userService;
 
@@ -20,11 +20,13 @@ class OAuthMiddleware
     /**
      * @param  OAuthFactory          $oAuthFactory  The OAuthFacotry instance to use
      * @param  UserServiceInterface  $userService
+     * @param  array                 $oAuthProviders An array of valid oauth providers
      */
-    public function __construct(OAuthFactory $oAuthFactory, UserServiceInterface $userService)
+    public function __construct(OAuthFactory $oAuthFactory, UserServiceInterface $userService, $oAuthProviders = ['github'])
     {
-        $this->oAuthFactory = $oAuthFactory;
-        $this->userService  = $userService;
+        $this->oAuthFactory   = $oAuthFactory;
+        $this->userService    = $userService;
+        $this->oAuthProviders = $oAuthProviders;
     }
 
     /**
@@ -105,7 +107,7 @@ class OAuthMiddleware
      *
      * @return string        a regex of the route
      */
-    public function regexRoute($route)
+    private function regexRoute($route)
     {
         return '@^' . $route . '$@';
     }
@@ -115,7 +117,7 @@ class OAuthMiddleware
      *
      * @return string the auth route regex
      */
-    public function getAuthRouteRegex()
+    private function getAuthRouteRegex()
     {
         return $this->regexRoute(static::$authRoute);
     }
@@ -125,48 +127,8 @@ class OAuthMiddleware
      *
      * @return string regex route
      */
-    public function getCallbackRouteRegex()
+    private function getCallbackRouteRegex()
     {
         return $this->regexRoute(static::$callbackRoute);
-    }
-
-    /**
-     * set the oauth factory
-     *
-     * @param OAuthFactory $oAuthFactory the oauth factory instance to use
-     */
-    public function setOAuthFactory(OAuthFactory $oAuthFactory)
-    {
-        $this->oAuthFactory = $oAuthFactory;
-    }
-
-    /**
-     * fetch the current oauth factory
-     *
-     * @return OAuthFactory current oauth faactory
-     */
-    public function getOAuthFactory()
-    {
-        return $this->oAuthFactory;
-    }
-
-    /**
-     * sets the array of allowed OAuth Providers
-     *
-     * @param array $oAuthProviders OAuth Providers
-     */
-    public function setOAuthProviders(array $oAuthProviders)
-    {
-        $this->oAuthProviders = $oAuthProviders;
-    }
-
-    /**
-     * get the current allowed OAuth Providers
-     *
-     * @return array Current OAuth Providers
-     */
-    public function getOAuthProviders()
-    {
-        return $this->oAuthProviders;
     }
 }
