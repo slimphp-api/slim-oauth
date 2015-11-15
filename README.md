@@ -1,5 +1,8 @@
 # Slim Framework OAuth Middleware
 
+[![Code Climate](https://codeclimate.com/github/slimphp-api/slim-oauth/badges/gpa.svg)](https://codeclimate.com/github/slimphp-api/slim-oauth)
+
+
 This repository contains a Slim Framework OAuth middleware.
 
 Enables you to authenticate using various OAuth providers.
