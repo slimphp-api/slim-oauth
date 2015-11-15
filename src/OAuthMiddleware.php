@@ -10,10 +10,9 @@ use Psr\Http\Message\ResponseInterface;
  */
 class OAuthMiddleware
 {
-    private $defaultRole  = 'guest';
-    private $returnRoute    = false;
     private $oAuthProviders = ['github'];
     private $oAuthFactory;
+    private $userService;
 
     private static $authRoute     = '/auth/(?<oAuthServiceType>\w+)';
     private static $callbackRoute = '/auth/(?<oAuthServiceType>\w+)/callback';
