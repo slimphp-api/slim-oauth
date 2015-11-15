@@ -40,8 +40,6 @@ class OAuthFactory {
             return false;
         }
 
-        $_SESSION['oauth_service_type'] = $type;
-
         // Create a new instance of the URI class with the current URI, stripping the query string
         $uriFactory = new UriFactory();
         $currentUri = $uriFactory->createFromSuperGlobalArray($_SERVER);
