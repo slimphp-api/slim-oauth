@@ -103,6 +103,9 @@ class UserService implements UserServiceInterface {
 }
 ```
 
+Once it's all configured redirecting the user to `http://domain/auth/<oauthtype>?return=<https://post.authentication/frontend>`
+where oauthtype is the service to authentication ie github and the return url parameter is where you want the user redirected to AFTER authentication.
+
 ## Credits
 
 - [Gabriel Baker](https://github.com/gabriel403)
