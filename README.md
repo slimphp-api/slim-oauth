@@ -4,7 +4,7 @@ This repository contains a Slim Framework OAuth middleware.
 
 Enables you to authenticate using various OAuth providers.
 
-The middleware allows registration with various oauth services and uses a user service to store the user details.
+The middleware allows registration with various oauth services and uses a user service to register/retrieve the user details.
 After registration/authentication it responds with a Authorization header which it expects to be returned as is to authorise further requests.
 It's up to the supplied user service how this is accomplished.
 
@@ -12,7 +12,7 @@ It's up to the supplied user service how this is accomplished.
 
 Via Composer
 
-``` bash
+```bash
 $ composer require slimphp-api/slim-oauth
 ```
 
@@ -62,7 +62,7 @@ $app->run();
 
 Example user service
 
-```
+```php
 <?php
 namespace Foo\Service;
 
@@ -103,8 +103,23 @@ class UserService implements UserServiceInterface {
 }
 ```
 
-Once it's all configured redirecting the user to `http://domain/auth/<oauthtype>?return=<https://post.authentication/frontend>`
+Once it's all configured redirecting the user to `https://domain/auth/<oauthtype>?return=<https://post.authentication/frontend>`
 where oauthtype is the service to authentication ie github and the return url parameter is where you want the user redirected to AFTER authentication.
+
+## Process cycle
+
+```
+Client (https://www.example.com) requires the user to register/authenticate
+-> redirects to https://api.example.com/auth/github?return=https://www.example.com/authenticated
+-> api redirects to GitHub to authenticate
+-> GitHub asks user to verify
+-> GitHub redirects back to https://api.example.com/auth/github/callback with a temp code in the url
+-> api exchanges temp code for permanent token
+-> api asks user service to verify/store user and details and return user object (must have token param)
+-> api redirects back to client https://www.example.com/authenticated with an Authorization header `'token '.$user->token`
+-> client adds Authorization header to all subsequent requests
+-> api retrieves user object by Authorization token to check existence
+```
 
 ## Credits
 
