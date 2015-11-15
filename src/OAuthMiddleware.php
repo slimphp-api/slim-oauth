@@ -40,10 +40,40 @@ class OAuthMiddleware
      */
     public function __invoke(RequestInterface $request, ResponseInterface $response, callable $next)
     {
+        $returnValue = $this->checkForOAuthPaths($request, $response, $next);
+
+        if (false !== $returnValue) {
+            return $returnValue;
+        }
+
+        // Fetches the current user or returns a default
+        $authHeaders = $request->getHeader('Authorization');
+        $authValue   = $this->parseForAuthentication($authHeaders);
+
+        $user     = $this->userService->findOrNew($authValue);
+        $request  = $request->withAttribute('user', $user);
+        if ($user->token) {
+            $response = $response->withHeader('Authorization', 'token '.$user->token);
+        }
+
+        return $next($request, $response);
+    }
+
+        /**
+         * Check the current url for oauth paths
+         *
+         * @param  RequestInterface  $request  PSR7 request object
+         * @param  ResponseInterface $response PSR7 response object
+         * @param  callable          $next     Next middleware callable
+         *
+         * @return ResponseInterface|false PSR7 response object
+         */
+    private function checkForOAuthPaths(RequestInterface $request, ResponseInterface $response, callable $next)
+    {
         $path = $request->getUri()->getPath();
 
         if (!is_string($path)) {
-            return $next($request, $response);
+            return false;
         }
 
         // this matches the request to authenticate for an oauth provider
@@ -78,8 +108,19 @@ class OAuthMiddleware
             return $response->withStatus(200)->withHeader('Authorization', 'token '.$user->token)->withHeader('Location', $_SESSION['oauth_return_url']);
         }
 
-        // Fetches the current user or returns a default
-        $authHeaders = $request->getHeader('Authorization');
+        return false;
+    }
+
+    /**
+     * Parse the Authorization header for auth tokens
+     *
+     * @param  array $authHeaders Array of PSR7 headers specific to authorization
+     *
+     * @return string|false Return either the auth token of false if none found
+     *
+     */
+    private function parseForAuthentication(array $authHeaders)
+    {
         $authValue  = false;
         if (count($authHeaders) > 0) {
             foreach ($authHeaders as $authHeader) {
@@ -90,14 +131,7 @@ class OAuthMiddleware
                 }
             }
         }
-
-        $user     = $this->userService->findOrNew($authValue);
-        $request  = $request->withAttribute('user', $user);
-        if ($user->token) {
-            $response = $response->withHeader('Authorization', 'token '.$user->token);
-        }
-
-        return $next($request, $response);
+        return $authValue;
     }
 
     /**
