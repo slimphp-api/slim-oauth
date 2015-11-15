@@ -91,7 +91,9 @@ class OAuthMiddleware
 
         $user     = $this->userService->findOrNew($authValue);
         $request  = $request->withAttribute('user', $user);
-        $response = $response->withHeader('Authorization', 'token '.$user->token);
+        if ($user->token) {
+            $response = $response->withHeader('Authorization', 'token '.$user->token);
+        }
 
         return $next($request, $response);
     }
