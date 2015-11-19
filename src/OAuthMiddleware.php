@@ -38,10 +38,11 @@ class OAuthMiddleware
      *
      * @return ResponseInterface PSR7 response object
      */
-    public function __invoke(RequestInterface $request, ResponseInterface $response, callable $next)
+    public function __invoke(RequestInterface $request, ResponseInterface $response, callable $next = null)
     {
-        $returnValue = $this->checkForOAuthPaths($request, $response, $next);
+        $returnValue = $this->checkForOAuthPaths($request, $response);
 
+        // if not false, means we've got some redirecting to do
         if (false !== $returnValue) {
             return $returnValue;
         }
@@ -56,7 +57,11 @@ class OAuthMiddleware
             $response = $response->withHeader('Authorization', 'token '.$user->token);
         }
 
-        return $next($request, $response);
+        if ($next) {
+            $response = $next($request, $response);
+        }
+
+        return $response;
     }
 
         /**
@@ -64,11 +69,10 @@ class OAuthMiddleware
          *
          * @param  RequestInterface  $request  PSR7 request object
          * @param  ResponseInterface $response PSR7 response object
-         * @param  callable          $next     Next middleware callable
          *
          * @return ResponseInterface|false PSR7 response object
          */
-    private function checkForOAuthPaths(RequestInterface $request, ResponseInterface $response, callable $next)
+    private function checkForOAuthPaths(RequestInterface $request, ResponseInterface $response)
     {
         $path = $request->getUri()->getPath();
 
