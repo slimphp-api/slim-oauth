@@ -85,11 +85,19 @@ class UserService implements UserServiceInterface {
         // could go further with this and check org/team membership
         $user = json_decode($service->request('user'), true);
 
-        // create and save a new user
-        $model = new $this->userModel([
-            'oauth_token' => $service->getStorage()->retrieveAccessToken('GitHub')->getAccessToken(),
-            'token'       => 'randomstringj0' // this isn't really random, but it should be!
-        ]);
+        // try to find user by the oauth server's user id, 
+        // best way since oauth token might have been invalidated
+        $models = $this->userModel->byRemoteId($user['id'])->get(); 
+        $model  = $models->first();
+
+        if (!$model) {
+            // create and save a new user
+            $model = new $this->userModel([
+                'remote_id'   => $user['id']
+            ]);
+        }
+        $model->oauth_token = $service->getStorage()->retrieveAccessToken('GitHub')->getAccessToken();
+        $model->token       = 'randomstringj0'; // this isn't really random, but it should be!
         $model->save();
         return $model;
     }
