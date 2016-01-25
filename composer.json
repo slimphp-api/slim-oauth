@@ -1,7 +1,7 @@
 {
     "name": "slimphp-api/slim-oauth",
     "type": "library",
-    "description": "Slim Framework CSRF protection middleware",
+    "description": "Slim Framework OAuth Middleware",
     "keywords": ["slim","framework","middleware","oauth"],
     "homepage": "http://slimframework.com",
     "license": "MIT",
